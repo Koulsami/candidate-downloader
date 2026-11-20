@@ -1,0 +1,12 @@
+.venv/
+.buildenv/
+build/
+dist/
+windows-build/
+*.spec
+
+.claude/settings.local.json
+
+# OAuth client secret — must be provided locally, never committed
+client_secret.json
+.DS_Store

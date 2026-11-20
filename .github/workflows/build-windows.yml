@@ -1,0 +1,51 @@
+name: Build Windows
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2 pyinstaller
+
+      - name: Write client_secret.json from secret
+        env:
+          CLIENT_SECRET_JSON: ${{ secrets.CLIENT_SECRET_JSON }}
+        run: |
+          printf '%s' "$CLIENT_SECRET_JSON" > client_secret.json
+          python -c "import json; json.load(open('client_secret.json')); print('client_secret.json is valid JSON')"
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --noconfirm --windowed --onefile \
+            --name "Candidate Downloader" \
+            --add-data "client_secret.json;." \
+            --collect-all googleapiclient \
+            --collect-all google_auth_oauthlib \
+            --collect-all google.auth \
+            --hidden-import googleapiclient.discovery \
+            candidate_downloader_oauth.py
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Candidate-Downloader-Windows
+          path: dist/Candidate Downloader.exe
+          if-no-files-found: error
